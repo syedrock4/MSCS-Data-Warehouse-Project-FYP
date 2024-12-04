@@ -1,4 +1,3 @@
-
 from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.microsoft.mssql.hooks.mssql import MsSqlHook
@@ -11,35 +10,71 @@ import logging
 import os, time, pendulum
 from datetime import datetime
 import os
-from SQL_QUERY.incremental_raw_query import *
-from SQL_QUERY.dimension_fact import *
+##from SQL_QUERY.incremental_raw_query import *
+##from SQL_QUERY.dimension_fact import *
+
 
 def export_sql_to_s3():
+    # Set up the SQL and S3 hooks
     sql_hook = MsSqlHook(mssql_conn_id='sql_server_cred')
     s3_hook = S3Hook(aws_conn_id='s3_cred')
     bucket_name = 'full-dump-data-stg'
+    
+    # Establish connection to the SQL Server database
     sql_conn = sql_hook.get_conn()
     sql_cursor = sql_conn.cursor()
 
-    sql_cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_SCHEMA='dbo'")
-    tables = sql_cursor.fetchall()
+    try:
+        # Fetch list of tables from the database
+        sql_cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_SCHEMA='dbo'")
+        tables = sql_cursor.fetchall()
 
-    for table in tables:
-        table_name = table[0]
-        logging.info(f"Processing table: {table_name}")
-        sql_cursor.execute(f"SELECT * FROM [inventory_management].dbo.{table_name}")
-        df = pd.DataFrame(sql_cursor.fetchall(), columns=[col[0] for col in sql_cursor.description])
-        
-        file_name = f"{table_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
-        file_path = f"/tmp/{file_name}"
-        df.to_csv(file_path, index=False)
+        for table in tables:
+            table_name = table[0]
+            logging.info(f"Processing table: {table_name}")
+            
+            # Fetch data from the current table
+            sql_cursor.execute(f"SELECT * FROM [WideWorldImporters].dbo.{table_name}")
+            
+            # Fetch all data and convert it to a pandas DataFrame
+            try:
+                df = pd.DataFrame(sql_cursor.fetchall(), columns=[col[0] for col in sql_cursor.description])
+            except Exception as e:
+                logging.error(f"Error while converting SQL data to DataFrame for table {table_name}: {e}")
+                continue  # Skip to the next table
 
-        s3_hook.load_file(filename=file_path, bucket_name=bucket_name, key=f"data/{file_name}", replace=True)
-        logging.info(f"Uploaded {file_name} to S3 bucket {bucket_name}")
-        os.remove(file_path)
+            # Handle invalid datetime values
+            for column in df.select_dtypes(include=['datetime64']).columns:
+                df[column] = pd.to_datetime(df[column], errors='coerce')
 
-    sql_cursor.close()
-    sql_conn.close()
+            # Generate the file name with a timestamp
+            file_name = f"{table_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+            file_path = f"/tmp/{file_name}"
+            
+            # Save DataFrame to CSV file
+            try:
+                df.to_csv(file_path, index=False)
+            except Exception as e:
+                logging.error(f"Error while writing {table_name} to CSV: {e}")
+                continue
+
+            # Upload CSV to S3
+            try:
+                s3_hook.load_file(filename=file_path, bucket_name=bucket_name, key=f"data/{file_name}", replace=True)
+                logging.info(f"Uploaded {file_name} to S3 bucket {bucket_name}")
+            except Exception as e:
+                logging.error(f"Error while uploading {file_name} to S3: {e}")
+            
+            # Remove the temporary CSV file after upload
+            os.remove(file_path)
+
+    except Exception as e:
+        logging.error(f"An error occurred during the SQL to S3 export process: {e}")
+    
+    finally:
+        # Clean up the SQL connection
+        sql_cursor.close()
+        sql_conn.close()
 
 
 def delete_existing_files():
@@ -48,10 +83,10 @@ def delete_existing_files():
              
         s3_hook = S3Hook(aws_conn_id='s3_cred')
        
-        keys = s3_hook.list_keys(bucket_name='sql-server-data', prefix='data/')
+        keys = s3_hook.list_keys(bucket_name='full-dump-data-stg', prefix='data/')
        
         if keys:
-            s3_hook.delete_objects(bucket='sql-server-data', keys=keys)
+            s3_hook.delete_objects(bucket='full-dump-data-stg', keys=keys)
     except Exception as e:
         logging.error(f"Error deleting file: {e}")
 

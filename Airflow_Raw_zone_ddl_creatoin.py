@@ -1,5 +1,3 @@
-
-
 from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.microsoft.mssql.hooks.mssql import MsSqlHook
@@ -37,14 +35,31 @@ def drop_staging_tables():
         redshift_conn.close()
 
 
-
 def generate_ddl():
+    # Define mappings from SQL Server types to Redshift types
+    data_type_mapping = {
+        'datetime2': 'timestamp',
+        'datetime': 'timestamp',
+        'nvarchar': 'varchar',
+        'varchar': 'varchar',
+        'char': 'char',
+        'nchar': 'char',
+        'decimal': 'numeric',
+        'int': 'int4',
+        'bigint': 'bigint',
+        'smallint': 'smallint',
+        'tinyint': 'smallint',
+        'bit': 'boolean',  # For boolean values in SQL Server
+        'float': 'double precision',
+    }
+
     sql_hook = MsSqlHook(mssql_conn_id='sql_server_cred')
     redshift_hook = PostgresHook(postgres_conn_id='redshift_connection')
     
     sql_conn = sql_hook.get_conn()
     sql_cursor = sql_conn.cursor()
 
+    # Get all tables from SQL Server's dbo schema
     sql_cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' AND TABLE_SCHEMA='dbo'")
     tables = sql_cursor.fetchall()
 
@@ -60,10 +75,16 @@ def generate_ddl():
         ddl = f"CREATE TABLE staging.{table_name} ("
         for column in columns:
             col_name, data_type, char_len = column
-            if data_type in ['varchar', 'char', 'nvarchar', 'nchar'] and char_len is not None:
-                ddl += f"{col_name} {data_type}({char_len}), "
+            # Map SQL Server data types to Redshift data types
+            redshift_data_type = data_type_mapping.get(data_type.lower(), data_type)  # Default to SQL Server type if no mapping exists
+            
+            # Handle invalid varchar length (-1)
+            if redshift_data_type == 'varchar' and char_len == -1:
+                ddl += f"{col_name} {redshift_data_type}, "  # Use varchar without length
+            elif redshift_data_type in ['varchar', 'char'] and char_len is not None:
+                ddl += f"{col_name} {redshift_data_type}({char_len}), "
             else:
-                ddl += f"{col_name} {data_type}, "
+                ddl += f"{col_name} {redshift_data_type}, "
         ddl = ddl.rstrip(', ') + ');'
 
         logging.info(f"Executing DDL for table: {table_name}")
@@ -71,6 +92,7 @@ def generate_ddl():
 
     sql_cursor.close()
     sql_conn.close()
+
 
 default_args = {
     'owner': 'airflow',
