@@ -1,3 +1,4 @@
+
 from airflow import DAG
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.microsoft.mssql.hooks.mssql import MsSqlHook
@@ -10,8 +11,7 @@ import logging
 import os, time, pendulum
 from datetime import datetime
 import os
-##from SQL_QUERY.incremental_raw_query import *
-##from SQL_QUERY.dimension_fact import *
+
 
 
 def export_sql_to_s3():
@@ -162,7 +162,7 @@ default_args = {
 }
 
   
-with DAG('Datawarehouse_project_elt_pipline', default_args=default_args,start_date= start_date,schedule_interval='13 23 * * *') as dag:
+with DAG('DataMigration_SQL_TO_S3_Datalake', default_args=default_args,start_date= start_date,schedule_interval='20 17 * * *') as dag:
     truncate_staging_tables = PythonOperator(
         task_id='truncate_staging_tables_data',
         python_callable=truncate_staging_tables,

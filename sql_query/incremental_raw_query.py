@@ -575,7 +575,7 @@ select * from insert_upd
 
 
 truncate_scm_raw_zone_stockitems = """
-truncate table scm_raw_zone.stateprovinces
+truncate table scm_raw_zone.stockitems
 """
 
 insert_scm_raw_zone_stockitems = """
@@ -594,11 +594,16 @@ marketingcomments,eod_date)
 
 with dwh as (
 select 
-stateprovinceid,
-stateprovincecode,
-stateprovincename,
-countryid,
-salesterritory
+stockitemid,
+stockitemname,
+supplierid,
+unitpackageid,
+outerpackageid,
+taxrate,
+unitprice,
+recommendedretailprice,
+typicalweightperunit,
+marketingcomments
 from scm_raw_zone.stockitems c 
 ),
 insert_upd as (
