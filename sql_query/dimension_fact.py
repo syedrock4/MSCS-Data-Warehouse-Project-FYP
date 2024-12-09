@@ -53,14 +53,14 @@ insert into processing_zone.Dim_Datetime
 
 WITH RECURSIVE date_generator(date_value) AS (
     SELECT
-        '2023-07-01'::DATE
+        '2013-01-01'::DATE
     UNION ALL
     SELECT
         (date_value + INTERVAL '1 day')::DATE
     FROM
         date_generator
     WHERE
-        (date_value + INTERVAL '1 day')::DATE <= '2025-04-25'::DATE
+        (date_value + INTERVAL '1 day')::DATE <= '2018-04-25'::DATE
 ),
 date_details AS (
     SELECT
@@ -72,7 +72,7 @@ date_details AS (
         EXTRACT(DOW FROM date_value) AS dayofweek,
         EXTRACT(WEEK FROM date_value) AS weekofyear,
         CASE
-            WHEN date_value = DATE '2023-07-01' OR date_value = DATE '2025-04-25' THEN TRUE
+            WHEN date_value = DATE '2013-01-01' OR date_value = DATE '2018-04-25' THEN TRUE
             ELSE FALSE
         END AS isholiday
     FROM
@@ -103,7 +103,19 @@ SELECT
     day,
     dayofweek,
     weekofyear,
-    isholiday
+    isholiday,
+     case when month =1 then 'Jan'
+        when  month =2 then 'Feb'
+        when month =3 then 'Mar'
+        when month =4 then 'Apr'
+        when month =5 then 'May'
+        when month =6 then 'Jun'
+        when month =7 then 'Jul'
+        when month =8 then 'Aug'
+        when month =9 then 'Sep'
+        when month =10 then 'Oct'
+        when month =11 then 'Nov'
+        when month =12 then 'Dec' end as Month_name
 FROM
     data_to_insert
   
@@ -173,15 +185,16 @@ select
     SUM(ol.TaxRate * ol.Quantity) AS TotalTax,
     SUM((ol.UnitPrice - ol.TaxRate) * ol.Quantity) AS TotalDiscount,
     SUM(ol.Quantity) AS TotalQuantity,
-    SUM((ol.UnitPrice - ol.TaxRate - ol.Quantity) * ol.Quantity) AS TotalProfit,
+    abs(SUM((ol.UnitPrice - ol.TaxRate) * ol.Quantity)) AS TotalProfit,
     AVG(ol.UnitPrice) AS AverageUnitPrice,
-    o.eod_date 
+    o.eod_date,
+    o.OrderDate
 FROM scm_raw_zone.Orders o
 left JOIN scm_raw_zone.OrderLines ol ON o.OrderID = ol.OrderID
 left JOIN processing_zone.dim_customer  c ON o.CustomerID = c.CustomerID
 left JOIN processing_zone.dim_location  sp ON sp.StateProvinceID = o.PickedByPersonID
 left join processing_zone.dim_product dp on dp.stockitemid   = ol.StockItemID
-GROUP BY  o.OrderID,c.CustomerID, ol.StockItemID, o.SalespersonPersonID, sp.StateProvinceID,o.eod_date 
+GROUP BY  o.OrderID,c.CustomerID, ol.StockItemID, o.SalespersonPersonID, sp.StateProvinceID,o.eod_date ,o.OrderDate
 
 """
 
@@ -202,9 +215,9 @@ SELECT
     st.SupplierID AS SupplierKey,
     st.PaymentMethodID AS PaymentMethodKey,
     st.TransactionTypeID AS TransactionTypeKey,
-    st.TransactionAmount,
+    abs(st.TransactionAmount) as TransactionAmount,
     st.TaxAmount,
-    st.OutstandingBalance,
+    abs(st.OutstandingBalance) as OutstandingBalance,
     st.amountexcludingtax,
     st.IsFinalized,
     st.TransactionDate,
