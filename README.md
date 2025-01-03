@@ -1,6 +1,6 @@
 # MSCS-Data-Warehouse-Project-FYP
 # Instruction
-First Step: We need to setup AWS account for this we need to create AWS account and we are going to use on S3 Datalake and Redshift services in AWS.
+* First Step: We need to setup AWS account for this we need to create AWS account and we are going to use on S3 Datalake and Redshift services in AWS.
 Second Step : In second step we need to setup Apache Airflow in Local PC, we are going to use airlfow for writing ETL pipeline and orchestration.
 For Apache Airflow : https://github.com/aws/aws-mwaa-local-runner
 We can access airlfow using : http://localhost:8080
