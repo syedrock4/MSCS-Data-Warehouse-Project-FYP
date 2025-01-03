@@ -7,8 +7,20 @@ We can access airlfow using : http://localhost:8080
 * Third Step : In this step we need to downlaod MSCS-Data-Warehouse-Project-FYP repository in Dag folder
 Once all these setup done we are reading to utilize this project.
 
+# Scalable Data Warehouse Development using AWS Redshift, Airflow, S3, and Power BI  Archtitecture
+![image](https://github.com/user-attachments/assets/fc24a0a8-577a-4bd7-b8e0-69ed24c34168)
 
-Architecture of Data Warehouse and Its Logic Data Lake: AWS S3 Data Warehouse: Redshift ETL Tool: Airflow Dimension: SCD Type 1 Fact: Fact_inventory_transaction and Fact_orderdetails Raw zone: full dump plus incrementally Logic: In first time we will load the full dump data into warehouse then we will load or add incrementally data logic (insert and update).
+# Data Warehouse Model Start Schema
+* Fact Sales Analysis
+![image](https://github.com/user-attachments/assets/d10fa66d-b494-4fd8-87f8-6d17a53bb788)
+
+* Fact Transaction Analysis
+  ![image](https://github.com/user-attachments/assets/e4a8be2b-d51e-44e5-8977-232d99998250)
+
+  
+
+
+Architecture of Data Warehouse and Its Logic, Data Lake: AWS S3, Data Warehouse: Redshift, ETL Tool: Airflow ,Dimension: SCD Type 1 Fact: Fact and Fact_orderdetails Raw zone: full dump plus incrementally Logic: In first time we will load the full dump data into warehouse then we will load or add incrementally data logic (insert and update).
 
 # Power BI Dashboard
 ![image](https://github.com/user-attachments/assets/a23fbe1f-d4e0-4f1f-81b8-783e49ecc9b9)
