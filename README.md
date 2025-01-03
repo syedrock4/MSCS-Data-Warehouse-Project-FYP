@@ -8,6 +8,9 @@ We can access airlfow using : http://localhost:8080
   
 Once all these setup done we are reading to utilize this project.
 
+# Loom Video Link:
+https://www.loom.com/share/b62f5bafc48a4ac385ae2b4c1ca55645?sid=f077faf0-d401-4f34-83dd-7220947f5564
+
 Architecture of Data Warehouse and Its Logic, Data Lake: AWS S3, Data Warehouse: Redshift, ETL Tool: Airflow ,Dimension: SCD Type 1 Fact: Fact and Fact_orderdetails Raw zone: full dump plus incrementally Logic: In first time we will load the full dump data into warehouse then we will load or add incrementally data logic (insert and update).
 
 # Scalable Data Warehouse Development using AWS Redshift, Airflow, S3, and Power BI  Archtitecture
